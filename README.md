@@ -1,6 +1,6 @@
 # mini-word2vec
 
-A small Word2Vec-style embedding pipeline that reads raw text, preprocesses it, tokenizes it, builds a vocabulary, and generates training data.
+A compact Word2Vec-style embedding project that reads raw text, preprocesses it, tokenizes it, builds a vocabulary, creates skip-gram pairs, and trains a small embedding layer.
 
 ## Project structure
 
@@ -8,54 +8,72 @@ A small Word2Vec-style embedding pipeline that reads raw text, preprocesses it, 
 - `outputs/`: generated artifacts and checkpoints
 - `src/`: project source code
 - `tests/`: unit and integration tests
-- `train.py`: training entry point for embeddings
+- `train.py`: training entry point
 
 ## Architecture
 
-The pipeline follows **Single Responsibility Principle**:
+The project follows a small, focused separation of responsibilities:
 
-- **Preprocessor**: Cleans and normalizes text
-- **Tokenizer**: Converts text to tokens
-- **Vocabulary**: Builds token-ID mappings
-- **DatasetBuilder**: Generates training data structures (skip-gram pairs, CBOW samples) — **no file I/O**
-- **Pipeline**: Orchestrates the workflow and handles file persistence
+- **Preprocessor**: cleans and normalizes text
+- **Tokenizer**: converts text into tokens
+- **Vocabulary**: builds token-to-ID mappings
+- **DatasetBuilder**: builds skip-gram training pairs from token IDs
+- **EmbeddingLayer**: stores and looks up dense vector representations by token ID
+- **TinyWord2Vec**: trains embeddings from co-occurrence data and exposes vector lookup
+- **Pipeline**: orchestrates the workflow and writes artifacts
 
 ## What it does
 
-1. Reads the raw corpus from `data/raw/sherlock.txt`
+1. Reads a corpus from `data/raw/sherlock.txt`
 2. Cleans and normalizes the text
 3. Tokenizes the cleaned text
 4. Builds a vocabulary and token-ID mappings
-5. Generates skip-gram training pairs from token IDs
-6. Saves artifacts to `outputs/processed/`
+5. Generates skip-gram training pairs
+6. Trains a small embedding matrix and saves it for later use
+
+## Embedding layer
+
+The embedding layer is intentionally small and focused:
+
+```python
+from src.embeddings import EmbeddingLayer
+
+layer = EmbeddingLayer(vocab_size=100, embedding_dim=32)
+vector = layer.lookup(5)
+batch = layer.lookup_batch([1, 5, 10])
+layer.save("outputs/embeddings.npy")
+reloaded = EmbeddingLayer.load("outputs/embeddings.npy")
+```
+
+It supports:
+
+- `lookup(token_id)` for a single vector
+- `lookup_batch(token_ids)` for a batch of vectors
+- `save(path)` and `load(path)` for persistence
 
 ## Training data formats
 
 ### Skip-gram pairs
 
-The `DatasetBuilder.build_skipgram_pairs()` method generates pairs of (center_word, context_word):
+The `DatasetBuilder.build_skipgram_pairs()` method generates pairs of token IDs:
 
 ```python
-from src.dataset_builder import SkipGramPair
+from src.dataset_builder import DatasetBuilder
 
-# Returns: [SkipGramPair(center=0, context=1), SkipGramPair(center=1, context=0), ...]
+builder = DatasetBuilder()
 pairs = builder.build_skipgram_pairs(token_ids, window_size=2)
 ```
-
-### CBOW samples
-
-The `DatasetBuilder.build_cbow_samples()` method (coming soon) will generate (context_words, target_word) tuples.
 
 ## Saved artifacts
 
 The pipeline writes to `outputs/processed/`:
 
-- `clean_text.txt`: Preprocessed text
-- `vocabulary.json`: Full vocabulary (for reference)
-- `word_to_id.json`: Word → ID mappings
-- `id_to_word.json`: ID → Word mappings
-- `token_ids.npy`: Encoded token IDs (numpy format)
-- `skipgram_pairs.json`: Skip-gram training pairs (center_id, context_id)
+- `clean_text.txt`: preprocessed text
+- `vocabulary.json`: vocabulary metadata and counts
+- `word_to_id.json`: word → ID mappings
+- `id_to_word.json`: ID → word mappings
+- `token_ids.npy`: encoded token IDs
+- `skipgram_pairs.json`: skip-gram training pairs
 
 ## Usage
 
@@ -76,7 +94,6 @@ output = pipeline.run(
     output_dir="outputs",
 )
 
-# Access generated training data
 skipgram_pairs = output["skipgram_pairs"]
 vocabulary = output["vocabulary"]
 ```
