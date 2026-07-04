@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Optional, Union
 
+import numpy as np
+
 from .config import PipelineConfig
 from .dataset_builder import DatasetBuilder
 from .preprocessor import Preprocessor
@@ -31,6 +33,6 @@ class Pipeline:
         token_ids = self.vocabulary.encode(tokens)
 
         self.vocabulary.save_mappings(processed_dir)
-        self.dataset_builder.build(token_ids, processed_dir / "token_ids.npy")
+        np.save(processed_dir / "token_ids.npy", np.asarray(token_ids, dtype=np.int64))
 
         return {"vocabulary": self.vocabulary, "token_ids": token_ids, "clean_text": clean_text}

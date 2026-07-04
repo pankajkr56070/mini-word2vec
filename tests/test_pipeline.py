@@ -50,9 +50,9 @@ def test_pipeline_runs_and_writes_artifacts(tmp_path):
 
     assert result["vocabulary"].size >= 3
     assert result["token_ids"] == result["vocabulary"].encode(["hello", "world", "hello", "there"])
-    assert (output_dir / "clean_text.txt").exists()
-    assert (output_dir / "vocabulary.json").exists()
-    assert (output_dir / "token_ids.npy").exists()
+    assert (output_dir / "processed" / "clean_text.txt").exists()
+    assert (output_dir / "processed" / "vocabulary.json").exists()
+    assert (output_dir / "processed" / "token_ids.npy").exists()
 
 
 def test_build_skipgram_pairs():
