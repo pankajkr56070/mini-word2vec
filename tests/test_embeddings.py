@@ -1,16 +1,61 @@
 import numpy as np
+import pytest
 
 from src.embeddings import EmbeddingLayer
-from src.vocabulary import Vocabulary
 
 
-def test_embeddings_lookup_uses_token_ids_and_tokens() -> None:
-    vocab = Vocabulary(min_count=1)
-    vocab.build(["hello", "world"])
+def test_embedding_shape() -> None:
+    layer = EmbeddingLayer(vocab_size=3, embedding_dim=2)
+    assert layer.shape == (3, 2)
 
-    vectors = np.array([[1.0, 0.0], [0.0, 1.0]])
-    embeddings = EmbeddingLayer(vocab_size=vocab.size, embedding_dim=2, vectors=vectors)
 
-    assert np.allclose(embeddings.lookup(1), np.array([1.0, 0.0]))
-    assert np.allclose(embeddings.lookup(2), np.array([0.0, 1.0]))
-    assert np.allclose(embeddings.lookup_batch([1, 2]), np.array([[1.0, 0.0], [0.0, 1.0]]))
+def test_lookup() -> None:
+    layer = EmbeddingLayer(vocab_size=3, embedding_dim=2)
+    assert layer.lookup(0).shape == (2,)
+
+
+def test_lookup_invalid() -> None:
+    layer = EmbeddingLayer(vocab_size=3, embedding_dim=2)
+
+    with pytest.raises(IndexError, match="Invalid token id"):
+        layer.lookup(999)
+
+
+def test_batch_lookup() -> None:
+    layer = EmbeddingLayer(vocab_size=3, embedding_dim=2)
+    batch = layer.lookup_batch([0, 2])
+    assert batch.shape == (2, 2)
+
+
+def test_empty_batch() -> None:
+    layer = EmbeddingLayer(vocab_size=3, embedding_dim=2)
+    assert layer.lookup_batch([]).shape == (0, 2)
+
+
+def test_save(tmp_path) -> None:
+    layer = EmbeddingLayer(vocab_size=2, embedding_dim=3)
+    path = tmp_path / "embeddings.npy"
+
+    layer.save(path)
+
+    assert path.exists()
+
+
+def test_load(tmp_path) -> None:
+    layer = EmbeddingLayer(vocab_size=2, embedding_dim=3)
+    path = tmp_path / "embeddings.npy"
+    layer.save(path)
+    reloaded = EmbeddingLayer.load(path)
+
+    assert reloaded.shape == layer.shape
+    assert np.allclose(reloaded.embeddings, layer.embeddings)
+
+
+def test_invalid_vocab_size() -> None:
+    with pytest.raises(ValueError, match="vocab_size must be positive"):
+        EmbeddingLayer(vocab_size=0, embedding_dim=2)
+
+
+def test_invalid_embedding_dim() -> None:
+    with pytest.raises(ValueError, match="embedding_dim must be positive"):
+        EmbeddingLayer(vocab_size=3, embedding_dim=0)

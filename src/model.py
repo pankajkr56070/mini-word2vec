@@ -10,6 +10,7 @@ class TinyWord2Vec(EmbeddingLayer):
     def __init__(self, embedding_dim: int, vocabulary):
         super().__init__(vocab_size=vocabulary.size, embedding_dim=embedding_dim)
         self.vocabulary = vocabulary
+        self.vector_size = self.embedding_dim
 
     def fit_from_pairs(self, pairs: List[Union[SkipGramPair, tuple[int, int]]]) -> None:
         """Fit embeddings from token ID pairs (NOT string pairs).
