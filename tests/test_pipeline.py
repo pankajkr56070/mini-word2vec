@@ -1,5 +1,5 @@
 from src.dataset_builder import DatasetBuilder, SkipGramPair
-from src.model import TinyWord2Vec
+from src.model import Word2VecModel
 from src.config import PipelineConfig
 from src.pipeline import Pipeline
 from src.preprocessor import load_corpus, preprocess_text, save_cleaned_text
@@ -74,7 +74,7 @@ def test_build_skipgram_pairs():
 
 def test_training_smoke():
     corpus = "one two three one two"
-    model = train_word2vec(
+    model, vocabulary = train_word2vec(
         corpus,
         embedding_dim=8,
         epochs=2,
@@ -84,9 +84,10 @@ def test_training_smoke():
         learning_rate=0.1,
     )
 
-    assert isinstance(model, TinyWord2Vec)
-    assert model.vector_size == 8
-    assert model.get_vector("one").shape == (8,)
+    assert isinstance(model, Word2VecModel)
+    assert model.embedding_dim == 8
+    scores = model.forward(vocabulary.to_index("one"))
+    assert scores.shape == (vocabulary.size,)
 
 
 def test_load_corpus_reads_text_file(tmp_path):

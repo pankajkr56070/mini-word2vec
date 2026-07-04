@@ -7,7 +7,7 @@ from src.trainer import train_word2vec
 
 def main() -> None:
     corpus_path = Path("data/raw/sherlock.txt")
-    model = train_word2vec(
+    model, vocabulary = train_word2vec(
         corpus_path,
         embedding_dim=EMBEDDING_DIM,
         epochs=EPOCHS,
@@ -16,7 +16,7 @@ def main() -> None:
         max_vocab=VOCAB_SIZE,
     )
     output_path = Path("models/sherlock_embeddings.txt")
-    save_embeddings(model, output_path)
+    save_embeddings(model, vocabulary, output_path)
     print(f"Saved embeddings to {output_path}")
 
 

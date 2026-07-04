@@ -19,7 +19,7 @@ The project follows a small, focused separation of responsibilities:
 - **Vocabulary**: builds token-to-ID mappings
 - **DatasetBuilder**: builds skip-gram training pairs from token IDs
 - **EmbeddingLayer**: stores and looks up dense vector representations by token ID
-- **TinyWord2Vec**: trains embeddings from co-occurrence data and exposes vector lookup
+- **Word2VecModel**: performs forward passes from center-word IDs to raw context scores
 - **Pipeline**: orchestrates the workflow and writes artifacts
 
 ## What it does
@@ -109,4 +109,3 @@ PYTHONPATH=. .venv/bin/pytest -q tests
 ## GitHub
 
 This repository is initialized with Git and ready to push to GitHub as `pankajkr56070/mini-word2vec`.
-
