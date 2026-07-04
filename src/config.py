@@ -14,6 +14,7 @@ MIN_FREQUENCY = 1
 class PipelineConfig:
     min_count: int = MIN_FREQUENCY
     max_vocab: Optional[int] = None
+    window_size: int = WINDOW_SIZE
 
 
 @dataclass

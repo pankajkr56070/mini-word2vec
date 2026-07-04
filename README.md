@@ -26,7 +26,7 @@ The pipeline follows **Single Responsibility Principle**:
 2. Cleans and normalizes the text
 3. Tokenizes the cleaned text
 4. Builds a vocabulary and token-ID mappings
-5. Generates training data (skip-gram pairs, CBOW samples)
+5. Generates skip-gram training pairs from token IDs
 6. Saves artifacts to `outputs/processed/`
 
 ## Training data formats
@@ -55,6 +55,7 @@ The pipeline writes to `outputs/processed/`:
 - `word_to_id.json`: Word → ID mappings
 - `id_to_word.json`: ID → Word mappings
 - `token_ids.npy`: Encoded token IDs (numpy format)
+- `skipgram_pairs.json`: Skip-gram training pairs (center_id, context_id)
 
 ## Usage
 
@@ -69,11 +70,15 @@ Or use the pipeline directly from Python:
 from src.config import PipelineConfig
 from src.pipeline import Pipeline
 
-pipeline = Pipeline(PipelineConfig(min_count=1, max_vocab=5000))
+pipeline = Pipeline(PipelineConfig(min_count=1, max_vocab=5000, window_size=2))
 output = pipeline.run(
     input_path="data/raw/sherlock.txt",
     output_dir="outputs",
 )
+
+# Access generated training data
+skipgram_pairs = output["skipgram_pairs"]
+vocabulary = output["vocabulary"]
 ```
 
 ## Testing

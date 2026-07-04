@@ -1,4 +1,4 @@
-from src.dataset import build_skipgram_pairs
+from src.dataset_builder import DatasetBuilder, SkipGramPair
 from src.model import TinyWord2Vec
 from src.config import PipelineConfig
 from src.pipeline import Pipeline
@@ -45,23 +45,31 @@ def test_pipeline_runs_and_writes_artifacts(tmp_path):
     input_path.write_text("Hello world hello there\n", encoding="utf-8")
     output_dir = tmp_path / "processed"
 
-    pipeline = Pipeline(PipelineConfig(min_count=1, max_vocab=10))
+    pipeline = Pipeline(PipelineConfig(min_count=1, max_vocab=10, window_size=1))
     result = pipeline.run(input_path=input_path, output_dir=output_dir)
 
     assert result["vocabulary"].size >= 3
     assert result["token_ids"] == result["vocabulary"].encode(["hello", "world", "hello", "there"])
+    assert len(result["skipgram_pairs"]) > 0
     assert (output_dir / "processed" / "clean_text.txt").exists()
     assert (output_dir / "processed" / "vocabulary.json").exists()
     assert (output_dir / "processed" / "token_ids.npy").exists()
+    assert (output_dir / "processed" / "skipgram_pairs.json").exists()
 
 
 def test_build_skipgram_pairs():
+    vocab = Vocabulary(min_count=1)
     tokens = ["the", "cat", "sat", "on", "the", "mat"]
-    pairs = build_skipgram_pairs(tokens, window_size=1)
+    vocab.build(tokens)
+    
+    token_ids = vocab.encode(tokens)
+    builder = DatasetBuilder()
+    pairs = builder.build_skipgram_pairs(token_ids, window_size=1)
 
     assert len(pairs) > 0
-    assert ("cat", "sat") in pairs
-    assert ("sat", "cat") in pairs
+    # Verify pairs are SkipGramPair objects with valid token IDs
+    assert all(isinstance(p, SkipGramPair) for p in pairs)
+    assert all(0 <= p.center < vocab.size and 0 <= p.context < vocab.size for p in pairs)
 
 
 def test_training_smoke():
