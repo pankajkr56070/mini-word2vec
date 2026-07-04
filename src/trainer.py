@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List, Union
 
 from .config import EMBEDDING_DIM, EPOCHS, LEARNING_RATE, MIN_FREQUENCY, VOCAB_SIZE, WINDOW_SIZE
-from .dataset import build_skipgram_pairs
+from .dataset_builder import DatasetBuilder
 from .model import TinyWord2Vec
 from .preprocessor import load_corpus
 from .tokenizer import Tokenizer
@@ -31,7 +31,9 @@ def train_word2vec(
     vocab = Vocabulary(min_count=min_count, max_vocab=max_vocab)
     vocab.fit(tokens)
 
-    pairs = build_skipgram_pairs(tokens, window_size=window_size)
+    token_ids = vocab.encode(tokens)
+    dataset_builder = DatasetBuilder()
+    pairs = dataset_builder.build_skipgram_pairs(token_ids, window_size=window_size)
     model = TinyWord2Vec(embedding_dim=embedding_dim, vocabulary=vocab)
     model.fit_from_pairs(pairs)
     return model

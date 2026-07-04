@@ -1,6 +1,8 @@
-from typing import List
+from typing import List, Union
 
 import numpy as np
+
+from .dataset_builder import SkipGramPair
 
 
 class TinyWord2Vec:
@@ -10,17 +12,24 @@ class TinyWord2Vec:
         self.embeddings = np.zeros((self.vocabulary.size, embedding_dim), dtype=float)
         self.vector_size = embedding_dim
 
-    def fit_from_pairs(self, pairs: List[tuple[str, str]]) -> None:
+    def fit_from_pairs(self, pairs: List[Union[SkipGramPair, tuple[int, int]]]) -> None:
+        """Fit embeddings from token ID pairs (NOT string pairs).
+        
+        Args:
+            pairs: List of SkipGramPair or (center_id, context_id) tuples.
+                   IDs must already be encoded by the vocabulary.
+        """
         if not pairs:
             return
 
         cooccurrence = np.zeros((self.vocabulary.size, self.vocabulary.size), dtype=float)
-        for source, target in pairs:
-            source_idx = self.vocabulary.to_index(source)
-            target_idx = self.vocabulary.to_index(target)
-            if source_idx == self.vocabulary.unk_index or target_idx == self.vocabulary.unk_index:
-                continue
-            cooccurrence[source_idx, target_idx] += 1.0
+        for pair in pairs:
+            # Extract IDs from SkipGramPair or tuple
+            if hasattr(pair, 'center'):  # SkipGramPair dataclass
+                center_id, context_id = pair.center, pair.context
+            else:  # tuple of ints
+                center_id, context_id = pair
+            cooccurrence[center_id, context_id] += 1.0
 
         if np.allclose(cooccurrence, 0):
             return

@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, Union
 
+import json
 import numpy as np
 
 from .config import PipelineConfig
@@ -35,4 +36,16 @@ class Pipeline:
         self.vocabulary.save_mappings(processed_dir)
         np.save(processed_dir / "token_ids.npy", np.asarray(token_ids, dtype=np.int64))
 
-        return {"vocabulary": self.vocabulary, "token_ids": token_ids, "clean_text": clean_text}
+        # Generate skip-gram pairs
+        skipgram_pairs = self.dataset_builder.build_skipgram_pairs(token_ids, self.config.window_size)
+        # Save as JSON: convert SkipGramPair dataclass to dicts
+        pairs_data = [{"center": p.center, "context": p.context} for p in skipgram_pairs]
+        with open(processed_dir / "skipgram_pairs.json", "w") as f:
+            json.dump(pairs_data, f)
+
+        return {
+            "vocabulary": self.vocabulary,
+            "token_ids": token_ids,
+            "skipgram_pairs": skipgram_pairs,
+            "clean_text": clean_text,
+        }
