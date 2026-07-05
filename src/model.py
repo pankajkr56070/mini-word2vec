@@ -3,8 +3,6 @@ from typing import List, Union
 import numpy as np
 
 from .embeddings import EmbeddingLayer
-from .losses import CrossEntropyLoss
-
 
 class Word2VecModel:
     """Compute raw context-word scores for center-word token IDs."""
