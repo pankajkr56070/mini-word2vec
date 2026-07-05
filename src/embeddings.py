@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union
+from typing import List, Union
 
 import numpy as np
 
@@ -28,8 +28,9 @@ class EmbeddingLayer:
             raise IndexError(f"Invalid token id: {index}")
         return self.embeddings[index]
 
-    def lookup_batch(self, token_ids: list[int]) -> np.ndarray:
-        if not token_ids:
+    def lookup_batch(self, token_ids: Union[List[int], np.ndarray]) -> np.ndarray:
+        token_ids = np.asarray(token_ids)
+        if token_ids.size == 0:
             return np.empty((0, self.embedding_dim), dtype=float)
         return self.embeddings[token_ids]
 
@@ -47,3 +48,13 @@ class EmbeddingLayer:
         layer = cls(vocab_size=data.shape[0], embedding_dim=data.shape[1])
         layer.embeddings = data.astype(np.float32)
         return layer
+
+
+def save_embeddings(model, vocabulary, path: Union[str, Path]) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for index, token in enumerate(vocabulary.index_to_token):
+            vector = model.input_embeddings.lookup(index)
+            values = " ".join(str(value) for value in vector)
+            handle.write(f"{token} {values}\n")

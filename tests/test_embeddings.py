@@ -23,7 +23,7 @@ def test_lookup_invalid() -> None:
 
 def test_batch_lookup() -> None:
     layer = EmbeddingLayer(vocab_size=3, embedding_dim=2)
-    batch = layer.lookup_batch([0, 2])
+    batch = layer.lookup_batch(np.array([0, 2]))
     assert batch.shape == (2, 2)
 
 

@@ -2,48 +2,40 @@ from typing import List, Union
 
 import numpy as np
 
-from .dataset_builder import SkipGramPair
 from .embeddings import EmbeddingLayer
 
 
-class TinyWord2Vec(EmbeddingLayer):
-    def __init__(self, embedding_dim: int, vocabulary):
-        super().__init__(vocab_size=vocabulary.size, embedding_dim=embedding_dim)
-        self.vocabulary = vocabulary
-        self.vector_size = self.embedding_dim
+class Word2VecModel:
+    """Compute raw context-word scores for center-word token IDs."""
 
-    def fit_from_pairs(self, pairs: List[Union[SkipGramPair, tuple[int, int]]]) -> None:
-        """Fit embeddings from token ID pairs (NOT string pairs).
+    @property
+    def input_matrix(self) -> np.ndarray:
+        return self.input_embeddings.embeddings
 
-        Args:
-            pairs: List of SkipGramPair or (center_id, context_id) tuples.
-                   IDs must already be encoded by the vocabulary.
-        """
-        if not pairs:
-            return
+    @property
+    def output_matrix(self) -> np.ndarray:
+        return self.output_embeddings.embeddings
 
-        cooccurrence = np.zeros((self.vocabulary.size, self.vocabulary.size), dtype=float)
-        for pair in pairs:
-            if hasattr(pair, "center"):
-                center_id, context_id = pair.center, pair.context
-            else:
-                center_id, context_id = pair
-            cooccurrence[center_id, context_id] += 1.0
+    def __init__(self, vocab_size: int, embedding_dim: int) -> None:
+        if vocab_size <= 0:
+            raise ValueError("vocab_size must be positive")
+        if embedding_dim <= 0:
+            raise ValueError("embedding_dim must be positive")
+        self.vocab_size = vocab_size
+        self.embedding_dim = embedding_dim
+        self.input_embeddings = EmbeddingLayer(vocab_size, embedding_dim)
+        self.output_embeddings = EmbeddingLayer(vocab_size, embedding_dim)
 
-        if np.allclose(cooccurrence, 0):
-            return
+    def forward(self, token_id: int) -> np.ndarray:
+        """Returns logits."""
+        center_vector = self.input_embeddings.lookup(token_id)
+        return self.output_matrix @ center_vector
 
-        cooccurrence = cooccurrence + 1.0
-        _, singular_values, right_singular_vectors = np.linalg.svd(cooccurrence, full_matrices=False)
-        rank = min(self.embedding_dim, len(singular_values))
-        self.embeddings = right_singular_vectors[:, :rank].T.astype(float)
-        if rank < self.embedding_dim:
-            padding = np.zeros((self.embedding_dim - rank, self.vocabulary.size), dtype=float)
-            self.embeddings = np.vstack([self.embeddings, padding])
-        self.embeddings = self.embeddings[:, : self.vocabulary.size].T
+    def forward_batch(self, token_ids: Union[List[int], np.ndarray]) -> np.ndarray:
+        """Returns logits for a batch of token IDs."""
+        token_ids = np.asarray(token_ids)
+        if token_ids.size == 0:
+            return np.empty((0, self.vocab_size), dtype=np.float32)
 
-    def get_vector(self, token: str) -> np.ndarray:
-        index = self.vocabulary.to_index(token)
-        if index == self.vocabulary.unk_index:
-            return np.zeros(self.embedding_dim, dtype=float)
-        return self.lookup(index)
+        center_vectors = self.input_embeddings.lookup_batch(token_ids)
+        return center_vectors @ self.output_matrix.T
