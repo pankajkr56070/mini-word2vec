@@ -31,31 +31,33 @@ def test_forward_is_stable_for_extreme_logits() -> None:
     assert np.isfinite(loss_value)
 
 
-def test_compute_returns_scalar_cross_entropy() -> None:
+def test_forward_returns_scalar_cross_entropy() -> None:
     loss = CrossEntropyLoss()
 
-    value = loss.compute(np.zeros(4), target=0)
+    value = loss.forward(np.zeros(4), target=0)
 
     assert isinstance(value, float)
     assert value == pytest.approx(np.log(4.0))
 
 
-def test_forward_is_alias_for_compute() -> None:
+def test_forward_matches_manual_cross_entropy() -> None:
     loss = CrossEntropyLoss()
     logits = np.array([0.10, 0.37, 0.51, 0.24])
+    shifted = logits - np.max(logits)
+    expected = float(np.log(np.sum(np.exp(shifted))) - shifted[0])
 
-    assert loss.forward(logits, target=0) == loss.compute(logits, target=0)
+    assert loss.forward(logits, target=0) == pytest.approx(expected)
 
 
-def test_compute_rejects_invalid_target() -> None:
+def test_forward_rejects_invalid_target() -> None:
     loss = CrossEntropyLoss()
 
     with pytest.raises(IndexError, match="Invalid target id"):
-        loss.compute(np.zeros(4), target=4)
+        loss.forward(np.zeros(4), target=4)
 
 
-def test_compute_rejects_invalid_logits() -> None:
+def test_forward_rejects_invalid_logits() -> None:
     loss = CrossEntropyLoss()
 
     with pytest.raises(ValueError, match="non-empty 1D array"):
-        loss.compute(np.empty((0, 4)), target=0)
+        loss.forward(np.empty((0, 4)), target=0)

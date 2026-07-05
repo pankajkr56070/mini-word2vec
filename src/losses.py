@@ -20,10 +20,6 @@ class CrossEntropyLoss:
         shifted = logits - np.max(logits)
         return float(np.log(np.sum(np.exp(shifted))) - shifted[target])
 
-    def compute(self, logits: np.ndarray, target: int) -> float:
-        """Backward-compatible alias for forward()."""
-        return self.forward(logits, target)
-
     @staticmethod
     def _validate_logits(logits: np.ndarray) -> np.ndarray:
         logits = np.asarray(logits, dtype=np.float32)
