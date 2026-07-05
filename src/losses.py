@@ -1,4 +1,5 @@
 import numpy as np
+import select
 
 
 class CrossEntropyLoss:
@@ -20,9 +21,12 @@ class CrossEntropyLoss:
         shifted = logits - np.max(logits)
         return float(np.log(np.sum(np.exp(shifted))) - shifted[target])
 
-    def compute(self, logits: np.ndarray, target: int) -> float:
-        """Backward-compatible alias for forward()."""
-        return self.forward(logits, target)
+    def backward(self, logits: np.ndarray, target: int) -> np.ndarray:
+        logits = self._validate_logits(logits)
+        target = self._validate_target(target, logits.size)
+        gradient = self.softmax(logits)
+        gradient[target] -= 1
+        return gradient
 
     @staticmethod
     def _validate_logits(logits: np.ndarray) -> np.ndarray:
