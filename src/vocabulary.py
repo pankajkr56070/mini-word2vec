@@ -28,15 +28,19 @@ class Vocabulary:
 
     def build(self, tokens: List[str]) -> None:
         self.counts = Counter(tokens)
-        filtered = [token for token, count in self.counts.items() if count >= self.min_count]
-        if self.max_vocab is not None:
-            filtered = filtered[: self.max_vocab]
+        filtered = {token for token, count in self.counts.items() if count >= self.min_count}
 
-        first_seen = {token: index for index, token in enumerate(tokens) if token in filtered}
+        first_seen: Dict[str, int] = {}
+        for index, token in enumerate(tokens):
+            if token in filtered and token not in first_seen:
+                first_seen[token] = index
+
         ordered = sorted(
             filtered,
             key=lambda token: (-self.counts[token], first_seen[token]),
         )
+        if self.max_vocab is not None:
+            ordered = ordered[: self.max_vocab]
 
         self.token_to_index = {self.unk_token: self.unk_index}
         self.index_to_token = [self.unk_token]

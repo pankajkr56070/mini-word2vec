@@ -3,6 +3,7 @@ from typing import List, Union
 import numpy as np
 
 from .embeddings import EmbeddingLayer
+from .losses import CrossEntropyLoss
 
 
 class Word2VecModel:
@@ -39,3 +40,22 @@ class Word2VecModel:
 
         center_vectors = self.input_embeddings.lookup_batch(token_ids)
         return center_vectors @ self.output_matrix.T
+
+
+    def backward(self, center_id : int, gradient_logits: np.ndarray, learning_rate : float) -> None:
+        if learning_rate <= 0:
+            raise ValueError("learning_rate must be positive")
+
+        gradient_logits = np.asarray(gradient_logits, dtype=np.float32)
+
+        if gradient_logits.shape != (self.vocab_size,):
+            raise ValueError("gradient_logits must have shape (self.vocab_size)")
+        hidden = self.input_embeddings.lookup(center_id)
+        output_embeddings = self.output_embeddings.embeddings
+        input_embeddings = self.input_embeddings.embeddings
+
+        gradient_output_embeddings = np.outer(gradient_logits, hidden)
+        gradient_hidden = output_embeddings.T @ gradient_logits
+        output_embeddings -= learning_rate * gradient_output_embeddings
+        input_embeddings[center_id] -= learning_rate * gradient_hidden
+
